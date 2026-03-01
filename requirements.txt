@@ -5,3 +5,4 @@ matplotlib>=3.7.2
 seaborn>=0.12.2
 rich>=13.0.0
 streamlit>=1.30.0
+anthropic>=0.30.0

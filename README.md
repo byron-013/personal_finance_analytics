@@ -41,16 +41,30 @@ All features from the `more_accurate_income_ranges_middle_class` branch:
 - State-specific tax rates and cost of living scaling
 - Streamlit dashboard
 
+### LLM Expense Realism (`src/llm_expense_adjuster.py`)
+When an `ANTHROPIC_API_KEY` environment variable is set, Pro mode sends the demographic profile to the Claude API to generate realistic expense multipliers that replace the rule-based defaults. The LLM sees only non-None profile fields and returns category-specific adjustments relative to the state's middle-class baseline.
+
+Use `--no-llm` to run full Pro mode without the API call.
+
+**Note on Social Factors**: The social factor toggles reflect documented US statistical patterns from BLS and Census data. They are included for demographic simulation accuracy, not as value judgments.
+
 ## Setup & Usage
 
 ```bash
+# Switch to this branch
+git checkout financeiq-pro
+
 # Install dependencies (use a virtual environment)
 pip install -r requirements.txt
 
 # Standard mode
 python main.py --state CA
 
-# Pro mode
+# Pro mode (rule-based)
+python main.py --state CA --mode pro --no-llm
+
+# Pro mode (with LLM expense realism — requires API key)
+export ANTHROPIC_API_KEY=your-key-here
 python main.py --state CA --mode pro
 
 # Launch the interactive dashboard
@@ -63,6 +77,7 @@ streamlit run dashboard.py
 --state CODE              State code for tax/COL (default: CA)
 --mode MODE               standard (default) or pro (demographic profiling)
 --middle-class-tier TIER  Narrow income range: low, mid, or high
+--no-llm                  Skip LLM API call, use rule-based adjustments
 --user-id ID              Run analytics for a specific user (default: all)
 --months N                Months of data to generate (default: 12)
 --skip-viz                Skip PNG chart generation
@@ -95,6 +110,7 @@ personal-finance-analytics/
 ├── src/
 │   ├── data_generator.py      # Synthetic data generation (profile-aware)
 │   ├── profile_builder.py     # Demographic profile construction
+│   ├── llm_expense_adjuster.py # LLM-powered expense realism (Claude API)
 │   ├── database_manager.py    # DB init, loading, validation
 │   ├── analytics.py           # Trend analysis, forecasting, insights, rich tables
 │   └── visualizations.py      # Chart generation (PNG)
@@ -109,4 +125,5 @@ personal-finance-analytics/
 - Matplotlib, Seaborn (static charts)
 - Rich (terminal table formatting)
 - Streamlit (interactive dashboard)
+- Anthropic Claude API (LLM expense realism)
 - Faker (synthetic data)

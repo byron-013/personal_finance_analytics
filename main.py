@@ -64,6 +64,8 @@ def main():
     parser.add_argument("--mode", type=str, default="standard",
                         choices=["standard", "pro"],
                         help="Run mode: standard (default) or pro (demographic profiling)")
+    parser.add_argument("--no-llm", action="store_true",
+                        help="Skip LLM API call and use rule-based expense adjustments")
     args = parser.parse_args()
 
     # Load state configuration
@@ -166,6 +168,7 @@ def main():
             marriage=pro_marriage,
             kids=pro_kids,
             social=pro_social,
+            use_llm=not args.no_llm,
         )
         print("\n  --- Generated Profile ---")
         for k, v in profile.items():

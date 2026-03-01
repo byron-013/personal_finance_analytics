@@ -128,7 +128,7 @@ def _get_wage_multiplier(race, gender, demo):
     return multipliers.get(key, 0.85)
 
 
-def build_profile(state, age=None, marriage=None, kids=None, social=None):
+def build_profile(state, age=None, marriage=None, kids=None, social=None, use_llm=True):
     """Build a demographic profile dict for data generation.
 
     Parameters:
@@ -217,20 +217,20 @@ def build_profile(state, age=None, marriage=None, kids=None, social=None):
         resolved_gender = None
         income_weight = 1.0
 
-    # --- Expense adjustments (rule-based) ---
-    expense_adjustments = {}
+    # --- Expense adjustments (rule-based baseline) ---
+    rule_based_adjustments = {}
     if resolved_child_ages is not None:
         childcare_cost = sum(1800 for a in resolved_child_ages if a < 5)
         education_cost = sum(400 for a in resolved_child_ages if 5 <= a <= 17)
         if childcare_cost > 0:
-            expense_adjustments["childcare"] = childcare_cost
+            rule_based_adjustments["childcare"] = childcare_cost
         if education_cost > 0:
-            expense_adjustments["education"] = education_cost
+            rule_based_adjustments["education"] = education_cost
 
     if resolved_dual is True:
-        expense_adjustments["transportation_multiplier"] = 1.15
+        rule_based_adjustments["transportation_multiplier"] = 1.15
 
-    return {
+    profile = {
         "age": resolved_age,
         "is_married": resolved_married,
         "dual_income": resolved_dual,
@@ -240,5 +240,18 @@ def build_profile(state, age=None, marriage=None, kids=None, social=None):
         "ethnicity": resolved_ethnicity,
         "gender": resolved_gender,
         "income_weight": income_weight,
-        "expense_adjustments": expense_adjustments,
+        "expense_adjustments": rule_based_adjustments,
     }
+
+    # --- LLM expense realism (replaces rule-based when available) ---
+    if use_llm and os.environ.get("ANTHROPIC_API_KEY"):
+        from src.llm_expense_adjuster import get_expense_adjustments
+        llm_result = get_expense_adjustments(profile, state)
+        if llm_result and llm_result != rule_based_adjustments:
+            profile["expense_adjustments"] = llm_result
+    elif use_llm and not os.environ.get("ANTHROPIC_API_KEY"):
+        print("  [Profile] ANTHROPIC_API_KEY not set — using rule-based expense adjustments.")
+    elif not use_llm:
+        print("  [Profile] --no-llm flag active — using rule-based expense adjustments.")
+
+    return profile
