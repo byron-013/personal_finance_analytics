@@ -5,6 +5,38 @@ import os
 
 import pandas as pd
 import numpy as np
+from rich.console import Console
+from rich.table import Table
+
+_console = Console()
+
+REPORTS_BASE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "reports", "analysis_output")
+
+
+def print_and_save_table(df, title, user_dir=None):
+    """Print a rich table to terminal and save to CSV.
+
+    Args:
+        df: DataFrame to display.
+        title: Table title (also used for CSV filename).
+        user_dir: Optional subdirectory under reports/analysis_output.
+    """
+    if df.empty:
+        return
+
+    table = Table(title=title, header_style="bold cyan", show_lines=True)
+    for col in df.columns:
+        table.add_column(str(col))
+    for _, row in df.iterrows():
+        table.add_row(*[str(v) for v in row])
+    _console.print(table)
+
+    # Save CSV
+    out_dir = user_dir if user_dir else REPORTS_BASE
+    os.makedirs(out_dir, exist_ok=True)
+    filename = title.replace(" ", "_") + ".csv"
+    df.to_csv(os.path.join(out_dir, filename), index=False)
 
 
 def get_spending_trends(conn, user_id, months=12):
