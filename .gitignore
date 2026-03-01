@@ -1,0 +1,18 @@
+# Data
+data/raw/*
+data/synthetic/*
+*.db
+*.sqlite
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Reports
+reports/analysis_output/*
+!reports/analysis_output/.gitkeep
+
+# Environment
+.env
+venv/

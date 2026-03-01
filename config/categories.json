@@ -1,0 +1,16 @@
+{
+  "expense_categories": {
+    "Housing": ["Rent", "Mortgage", "Property Tax", "Home Insurance", "HOA Fees"],
+    "Transportation": ["Gasoline", "Car Payment", "Auto Insurance", "Public Transit", "Parking"],
+    "Food": ["Groceries", "Restaurants", "Coffee Shops", "Fast Food"],
+    "Utilities": ["Electric", "Water", "Natural Gas", "Internet", "Phone"],
+    "Healthcare": ["Health Insurance", "Prescriptions", "Doctor Visits", "Dental"],
+    "Entertainment": ["Streaming Services", "Movies", "Concerts", "Hobbies"],
+    "Shopping": ["Clothing", "Electronics", "Home Goods", "Personal Care"],
+    "Financial": ["Credit Card Payment", "Loan Payment", "Investment Contribution"]
+  },
+  "income_categories": {
+    "Earned Income": ["Salary", "Bonus", "Freelance"],
+    "Passive Income": ["Interest", "Dividends", "Rental Income"]
+  }
+}
