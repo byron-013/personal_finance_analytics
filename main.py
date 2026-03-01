@@ -34,6 +34,7 @@ from src.analytics import (
     print_and_save_table,
 )
 from src.visualizations import generate_all_charts
+from src.profile_builder import build_profile
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -59,6 +60,9 @@ def main():
     parser.add_argument("--middle-class-tier", type=str, default=None,
                         choices=["low", "mid", "high"],
                         help="Narrow middle class income to a sub-tier: low (lower-middle), mid (solidly-middle), high (upper-middle)")
+    parser.add_argument("--mode", type=str, default="standard",
+                        choices=["standard", "pro"],
+                        help="Run mode: standard (default) or pro (demographic profiling)")
     args = parser.parse_args()
 
     # Load state configuration
@@ -91,6 +95,82 @@ def main():
         print(f"  Income range narrowed to {tier_labels[tier]}: "
               f"${state_config['middle_class_income'][0]:,} – ${state_config['middle_class_income'][1]:,}")
 
+    # --- Pro Mode: demographic profiling ---
+    profile = None
+    if args.mode == "pro":
+        print("\n=== FinanceIQ Pro Mode ===")
+        print("Select which demographic toggles to enable:")
+        print("  1) Age")
+        print("  2) Marriage")
+        print("  3) Kids")
+        print("  4) Social Factors")
+        toggle_input = input("Enter toggle numbers separated by commas (e.g. 1,3): ").strip()
+        toggles = {t.strip() for t in toggle_input.split(",") if t.strip()}
+
+        # --- Age toggle ---
+        pro_age = None
+        if "1" in toggles:
+            age_input = input("  Age: enter a specific age or press Enter to sample randomly: ").strip()
+            if age_input:
+                pro_age = int(age_input)
+
+        # --- Marriage toggle ---
+        pro_marriage = None
+        if "2" in toggles:
+            m_input = input("  Married? (yes/no/random): ").strip().lower()
+            if m_input == "yes":
+                is_married = True
+                d_input = input("  Dual income? (yes/no/random): ").strip().lower()
+                if d_input == "yes":
+                    dual = True
+                elif d_input == "no":
+                    dual = False
+                else:
+                    dual = None
+                pro_marriage = {"is_married": is_married, "dual_income": dual}
+            elif m_input == "no":
+                pro_marriage = {"is_married": False, "dual_income": None}
+            else:
+                pro_marriage = {"is_married": None, "dual_income": None}
+
+        # --- Kids toggle ---
+        pro_kids = None
+        if "3" in toggles:
+            k_input = input("  Number of children (or press Enter to sample randomly): ").strip()
+            if k_input:
+                num_kids = int(k_input)
+                child_ages_list = []
+                for i in range(num_kids):
+                    ca = input(f"    Age of child {i+1}: ").strip()
+                    child_ages_list.append(int(ca))
+                pro_kids = {"num_children": num_kids, "child_ages": child_ages_list}
+            else:
+                pro_kids = {"num_children": None, "child_ages": None}
+
+        # --- Social factors toggle ---
+        pro_social = None
+        if "4" in toggles:
+            s_input = input("  Specify race/ethnicity/gender or press Enter to sample randomly: ").strip()
+            if s_input:
+                race_in = input("    Race (white/black/hispanic/asian/other): ").strip().lower() or None
+                eth_in = input("    Ethnicity (hispanic/non-hispanic): ").strip().lower() or None
+                gen_in = input("    Gender (male/female): ").strip().lower() or None
+                pro_social = {"race": race_in, "ethnicity": eth_in, "gender": gen_in}
+            else:
+                pro_social = {"race": None, "ethnicity": None, "gender": None}
+
+        profile = build_profile(
+            state=args.state,
+            age=pro_age,
+            marriage=pro_marriage,
+            kids=pro_kids,
+            social=pro_social,
+        )
+        print("\n  --- Generated Profile ---")
+        for k, v in profile.items():
+            print(f"    {k}: {v}")
+        print()
+
     print(f"=== Personal Finance Analytics Pipeline ({state_name}) ===\n")
 
     # Step 1: Generate synthetic data
@@ -101,7 +181,7 @@ def main():
     accounts_df = generate_accounts(users_df)
     transactions_df = generate_transactions(accounts_df, merchants_df, categories_df,
                                             users_df, state_config=state_config,
-                                            months=args.months)
+                                            months=args.months, profile=profile)
     budgets_df = generate_budgets(users_df, categories_df, state_config=state_config,
                                   months=6)
     goals_df = generate_financial_goals(users_df)

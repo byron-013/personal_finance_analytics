@@ -1,69 +1,45 @@
-# Personal Finance Analytics — Extended Branch
+# FinanceIQ Pro — Demographic-Aware Finance Analytics
 
 A financial transaction analysis system that generates synthetic banking data, stores it in a normalized SQLite database, and runs analytical queries to surface spending patterns, budget performance, and cash flow projections.
 
-This branch (`more_accurate_income_ranges_middle_class`) adds **middle class tier refinement**, **rich terminal tables**, and an **interactive Streamlit dashboard**.
+This branch (`financeiq-pro`) adds **demographic profiling** with toggleable factors (Age, Marriage, Kids, Social Factors) that influence income and expense generation using Census, CDC, and BLS statistical data.
 
 ## What's New in This Branch
 
-### Middle Class Tier Toggle
-Narrow the income range to a specific sub-tier of the middle class instead of using the full range:
-- **lower-middle** — bottom third of the state's middle class range
-- **solidly-middle** — middle third
-- **upper-middle** — top third
+### Pro Mode (`--mode pro`)
+An interactive demographic profiling system that adjusts financial data generation based on real-world statistical patterns:
 
-Use via CLI flag or interactive prompt:
+- **Age** — Sample or specify age; influences marriage probability and fertility rates
+- **Marriage** — Married/single status with optional dual-income household modeling
+- **Kids** — Number and ages of children; adds childcare ($1,800/mo per child under 5) and education ($400/mo per child 5-17) expenses
+- **Social Factors** — Race/ethnicity/gender with BLS wage gap multipliers applied to income
+
+**Ironclad Rule**: Any toggle set to OFF (None) is never used as input to any other calculation and is never inferred.
+
 ```bash
-# CLI flag
-python main.py --state CA --middle-class-tier low
+# Pro mode with interactive prompts
+python main.py --state CA --mode pro
 
-# Interactive — program will ask after state selection
+# Standard mode (unchanged behavior)
 python main.py --state CA
 ```
 
-### Rich Terminal Tables
-Key analytics results are printed as formatted tables in the terminal (using the `rich` library) and saved as CSVs. Tables are displayed for:
-- Budget vs Actual
-- Top 15 Merchants by Spend
-- Category % of Total Spending
-- Monthly Savings Rate
-- 30/60/90 Day Balance Projection
-- Income Summary per User (gross and estimated net)
+### Demographics Config (`config/demographics.json`)
+Statistical data for all 10 supported states:
+- Marriage rates by age bucket (Census-based)
+- Fertility rates by age and marital status (CDC-based)
+- BLS wage gap multipliers by race/gender
+- State-level racial/ethnic composition for random sampling
 
-### Streamlit Dashboard
-An interactive browser-based dashboard for exploring the data visually.
+### Profile Builder (`src/profile_builder.py`)
+Standalone module that constructs a profile dict with explicit None handling for every toggle combination. Supports all 16 combinations of 4 toggles.
 
-```bash
-# First generate the data
-python main.py --state CA
-
-# Then launch the dashboard
-streamlit run dashboard.py
-```
-
-The dashboard includes:
-- **KPI cards** — monthly income, expenses, net savings, savings rate (with deltas)
-- **Monthly Overview** — bar charts and detail table for income vs expenses
-- **Budget vs Actual** — month selector with color-coded status (over budget / at risk / on track)
-- **Top Merchants** — sortable table and bar chart of top 20 merchants
-- **Category Breakdown** — spending distribution with percentages
-- **Cash Flow Forecast** — 30/60/90 day balance projection with line chart
-- **User selector** in sidebar to switch between users
-
-### Organized Output
-Reports are now organized by file type under each user's folder:
-```
-reports/analysis_output/
-├── Patricia_Miller/
-│   ├── csv/           # All CSV reports
-│   └── charts/        # All PNG chart images
-├── William_Johnson/
-│   ├── csv/
-│   └── charts/
-└── Danielle_Johnson/
-    ├── csv/
-    └── charts/
-```
+### Inherited Features
+All features from the `more_accurate_income_ranges_middle_class` branch:
+- Middle class tier toggle (low/mid/high)
+- Rich terminal table printing
+- State-specific tax rates and cost of living scaling
+- Streamlit dashboard
 
 ## Setup & Usage
 
@@ -71,8 +47,11 @@ reports/analysis_output/
 # Install dependencies (use a virtual environment)
 pip install -r requirements.txt
 
-# Run the full pipeline
+# Standard mode
 python main.py --state CA
+
+# Pro mode
+python main.py --state CA --mode pro
 
 # Launch the interactive dashboard
 streamlit run dashboard.py
@@ -82,6 +61,7 @@ streamlit run dashboard.py
 
 ```
 --state CODE              State code for tax/COL (default: CA)
+--mode MODE               standard (default) or pro (demographic profiling)
 --middle-class-tier TIER  Narrow income range: low, mid, or high
 --user-id ID              Run analytics for a specific user (default: all)
 --months N                Months of data to generate (default: 12)
@@ -102,17 +82,19 @@ streamlit run dashboard.py
 
 ```
 personal-finance-analytics/
-├── main.py                    # Pipeline entry point
+├── main.py                    # Pipeline entry point (standard + pro modes)
 ├── dashboard.py               # Streamlit interactive dashboard
 ├── config/
 │   ├── categories.json        # Spending/income category definitions
-│   └── states.json            # State tax brackets and cost of living data
+│   ├── states.json            # State tax brackets and cost of living data
+│   └── demographics.json      # Marriage, fertility, wage gap, demographics
 ├── sql/
 │   ├── schema.sql             # Database schema (7 tables)
 │   ├── analytical_queries.sql # 10 analytical queries
 │   └── views.sql              # 5 reusable views
 ├── src/
-│   ├── data_generator.py      # Synthetic data generation
+│   ├── data_generator.py      # Synthetic data generation (profile-aware)
+│   ├── profile_builder.py     # Demographic profile construction
 │   ├── database_manager.py    # DB init, loading, validation
 │   ├── analytics.py           # Trend analysis, forecasting, insights, rich tables
 │   └── visualizations.py      # Chart generation (PNG)

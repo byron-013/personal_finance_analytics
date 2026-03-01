@@ -278,7 +278,7 @@ def _estimate_monthly_takehome(annual_income, state_config):
 
 
 def generate_transactions(accounts_df, merchants_df, categories_df, users_df,
-                          state_config=None, months=12):
+                          state_config=None, months=12, profile=None):
     """Generate 12 months of realistic transactions with recurring, weekly, and random patterns."""
     transactions = []
     txn_id = 1
@@ -303,12 +303,27 @@ def generate_transactions(accounts_df, merchants_df, categories_df, users_df,
         # Derive salary and spending scale from the user's actual annual income
         user_id = account["user_id"]
         annual_income = users_df[users_df["user_id"] == user_id].iloc[0]["annual_income"]
+
+        # Apply profile income_weight if provided
+        if profile is not None:
+            annual_income = annual_income * profile.get("income_weight", 1.0)
+
         user_salary = _estimate_monthly_takehome(annual_income, state_config or {
             "state_tax_brackets": []})
 
         # Income factor scales expenses relative to income position (0.6x to 1.4x)
         income_pct = (annual_income - income_min) / (income_max - income_min)
         income_factor = 0.6 + income_pct * 0.8  # range: 0.6 to 1.4
+
+        # Profile-based expense adjustments
+        _profile_childcare = 0
+        _profile_education = 0
+        _profile_transport_mult = 1.0
+        if profile is not None:
+            adj = profile.get("expense_adjustments", {})
+            _profile_childcare = adj.get("childcare", 0)
+            _profile_education = adj.get("education", 0)
+            _profile_transport_mult = adj.get("transportation_multiplier", 1.0)
 
         # Assign housing profile: renters get Rent only, homeowners get Mortgage + extras
         # Higher earners are more likely to own
@@ -388,7 +403,8 @@ def generate_transactions(accounts_df, merchants_df, categories_df, users_df,
                     merchant = cat_merchants.iloc[0]
                     low, high = AMOUNT_RANGES.get(cat["category_name"], (50, 200))
                     mult = get_season_mult(cat["category_name"], cat["parent_category"])
-                    amount = -round(random.uniform(low, high) * mult * income_factor * col_factor, 2)
+                    transport_adj = _profile_transport_mult if cat["parent_category"] == "Transportation" else 1.0
+                    amount = -round(random.uniform(low, high) * mult * income_factor * col_factor * transport_adj, 2)
                     txn_date = month_start + timedelta(days=random.randint(0, 5))
                     if txn_date > today:
                         continue
@@ -400,6 +416,37 @@ def generate_transactions(accounts_df, merchants_df, categories_df, users_df,
                         "transaction_date": txn_date.isoformat(),
                         "amount": amount,
                         "description": f"{merchant['merchant_name']} - {cat['category_name']}",
+                        "is_recurring": True,
+                    })
+                    txn_id += 1
+
+            # --- Profile: childcare and education expenses ---
+            if profile is not None and _profile_childcare > 0:
+                txn_date = month_start + timedelta(days=random.randint(1, 5))
+                if txn_date <= today:
+                    transactions.append({
+                        "transaction_id": txn_id,
+                        "account_id": account["account_id"],
+                        "merchant_id": 1,  # placeholder merchant
+                        "category_id": expense_cats.iloc[0]["category_id"],
+                        "transaction_date": txn_date.isoformat(),
+                        "amount": -round(_profile_childcare * col_factor, 2),
+                        "description": "Childcare Services",
+                        "is_recurring": True,
+                    })
+                    txn_id += 1
+
+            if profile is not None and _profile_education > 0:
+                txn_date = month_start + timedelta(days=random.randint(1, 5))
+                if txn_date <= today:
+                    transactions.append({
+                        "transaction_id": txn_id,
+                        "account_id": account["account_id"],
+                        "merchant_id": 1,  # placeholder merchant
+                        "category_id": expense_cats.iloc[0]["category_id"],
+                        "transaction_date": txn_date.isoformat(),
+                        "amount": -round(_profile_education * col_factor, 2),
+                        "description": "Education Expenses",
                         "is_recurring": True,
                     })
                     txn_id += 1
@@ -473,12 +520,15 @@ def generate_transactions(accounts_df, merchants_df, categories_df, users_df,
                 txn_id += 1
 
             # --- Income: biweekly salary (consistent per user) ---
-            salary_cat = income_cats[income_cats["category_name"] == "Salary"]
-            if not salary_cat.empty:
-                salary_cat = salary_cat.iloc[0]
-                salary_merchants = merchants_df[merchants_df["category_id"] == salary_cat["category_id"]]
+            salary_cat_df = income_cats[income_cats["category_name"] == "Salary"]
+            _salary_cat_id = None
+            _salary_merchant_id = None
+            if not salary_cat_df.empty:
+                salary_cat_row = salary_cat_df.iloc[0]
+                _salary_cat_id = salary_cat_row["category_id"]
+                salary_merchants = merchants_df[merchants_df["category_id"] == _salary_cat_id]
                 if not salary_merchants.empty:
-                    merchant = salary_merchants.iloc[0]
+                    _salary_merchant_id = salary_merchants.iloc[0]["merchant_id"]
                     for pay_day in [15, 30]:
                         txn_date = month_start + timedelta(days=min(pay_day, 28))
                         if txn_date > today:
@@ -486,14 +536,37 @@ def generate_transactions(accounts_df, merchants_df, categories_df, users_df,
                         transactions.append({
                             "transaction_id": txn_id,
                             "account_id": account["account_id"],
-                            "merchant_id": merchant["merchant_id"],
-                            "category_id": salary_cat["category_id"],
+                            "merchant_id": _salary_merchant_id,
+                            "category_id": _salary_cat_id,
                             "transaction_date": txn_date.isoformat(),
                             "amount": user_salary,
                             "description": "Direct Deposit - Salary",
                             "is_recurring": True,
                         })
                         txn_id += 1
+
+            # --- Dual income (profile): second earner salary ---
+            if (profile is not None and profile.get("dual_income") is True
+                    and _salary_cat_id is not None and _salary_merchant_id is not None):
+                second_income = round(random.uniform(income_min, income_max), 2)
+                second_income *= profile.get("income_weight", 1.0)
+                second_salary = _estimate_monthly_takehome(
+                    second_income, state_config or {"state_tax_brackets": []})
+                for pay_day in [15, 30]:
+                    txn_date = month_start + timedelta(days=min(pay_day, 28))
+                    if txn_date > today:
+                        continue
+                    transactions.append({
+                        "transaction_id": txn_id,
+                        "account_id": account["account_id"],
+                        "merchant_id": _salary_merchant_id,
+                        "category_id": _salary_cat_id,
+                        "transaction_date": txn_date.isoformat(),
+                        "amount": second_salary,
+                        "description": "Direct Deposit - Spouse/Partner Salary",
+                        "is_recurring": True,
+                    })
+                    txn_id += 1
 
             # --- Year-end bonus in December ---
             if month_num == 12:
