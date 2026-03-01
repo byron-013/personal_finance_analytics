@@ -13,6 +13,7 @@ from src.data_generator import (
     generate_budgets,
     generate_financial_goals,
     save_synthetic_data,
+    load_state_config,
 )
 from src.database_manager import (
     initialize_database,
@@ -39,6 +40,7 @@ CATEGORIES_CONFIG = os.path.join(BASE_DIR, "config", "categories.json")
 SYNTHETIC_DATA_DIR = os.path.join(BASE_DIR, "data", "synthetic")
 VIEWS_PATH = os.path.join(BASE_DIR, "sql", "views.sql")
 REPORTS_DIR = os.path.join(BASE_DIR, "reports", "analysis_output")
+STATES_CONFIG = os.path.join(BASE_DIR, "config", "states.json")
 
 
 def main():
@@ -49,19 +51,27 @@ def main():
                         help="Number of months of data to generate (default: 12)")
     parser.add_argument("--skip-viz", action="store_true",
                         help="Skip chart generation")
+    parser.add_argument("--state", type=str, default="CA",
+                        help="State code for tax rates and cost of living (default: CA)")
     args = parser.parse_args()
 
-    print("=== Personal Finance Analytics Pipeline ===\n")
+    # Load state configuration
+    state_config = load_state_config(STATES_CONFIG, args.state)
+    state_name = state_config["name"]
+
+    print(f"=== Personal Finance Analytics Pipeline ({state_name}) ===\n")
 
     # Step 1: Generate synthetic data
     print("Step 1: Generating synthetic data...")
-    users_df = generate_users(num_users=3)
+    users_df = generate_users(num_users=3, state_config=state_config)
     categories_df = generate_categories(CATEGORIES_CONFIG)
     merchants_df = generate_merchants(categories_df)
     accounts_df = generate_accounts(users_df)
     transactions_df = generate_transactions(accounts_df, merchants_df, categories_df,
+                                            users_df, state_config=state_config,
                                             months=args.months)
-    budgets_df = generate_budgets(users_df, categories_df, months=6)
+    budgets_df = generate_budgets(users_df, categories_df, state_config=state_config,
+                                  months=6)
     goals_df = generate_financial_goals(users_df)
 
     data_dict = {

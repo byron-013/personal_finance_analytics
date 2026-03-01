@@ -1,0 +1,100 @@
+{
+  "CA": {
+    "name": "California",
+    "middle_class_income": [63674, 191042],
+    "cost_of_living_index": 142.3,
+    "state_tax_brackets": [
+      {"rate": 0.01, "min_income": 0},
+      {"rate": 0.02, "min_income": 10756},
+      {"rate": 0.04, "min_income": 25499},
+      {"rate": 0.06, "min_income": 40245},
+      {"rate": 0.08, "min_income": 55866},
+      {"rate": 0.093, "min_income": 70606},
+      {"rate": 0.103, "min_income": 360659},
+      {"rate": 0.113, "min_income": 432787},
+      {"rate": 0.123, "min_income": 721314},
+      {"rate": 0.133, "min_income": 1000000}
+    ]
+  },
+  "NY": {
+    "name": "New York",
+    "middle_class_income": [54725, 164190],
+    "cost_of_living_index": 125.1,
+    "state_tax_brackets": [
+      {"rate": 0.04, "min_income": 0},
+      {"rate": 0.045, "min_income": 8500},
+      {"rate": 0.0525, "min_income": 11700},
+      {"rate": 0.055, "min_income": 13900},
+      {"rate": 0.06, "min_income": 80650},
+      {"rate": 0.0685, "min_income": 215400},
+      {"rate": 0.0965, "min_income": 1077550},
+      {"rate": 0.103, "min_income": 5000000},
+      {"rate": 0.109, "min_income": 25000000}
+    ]
+  },
+  "TX": {
+    "name": "Texas",
+    "middle_class_income": [48690, 146070],
+    "cost_of_living_index": 92.4,
+    "state_tax_brackets": []
+  },
+  "FL": {
+    "name": "Florida",
+    "middle_class_income": [45278, 135834],
+    "cost_of_living_index": 102.2,
+    "state_tax_brackets": []
+  },
+  "WA": {
+    "name": "Washington",
+    "middle_class_income": [63064, 189210],
+    "cost_of_living_index": 114.1,
+    "state_tax_brackets": []
+  },
+  "IL": {
+    "name": "Illinois",
+    "middle_class_income": [52289, 156866],
+    "cost_of_living_index": 94.7,
+    "state_tax_brackets": [
+      {"rate": 0.0495, "min_income": 0}
+    ]
+  },
+  "MA": {
+    "name": "Massachusetts",
+    "middle_class_income": [66565, 199716],
+    "cost_of_living_index": 141.2,
+    "state_tax_brackets": [
+      {"rate": 0.05, "min_income": 0},
+      {"rate": 0.09, "min_income": 1083150}
+    ]
+  },
+  "CO": {
+    "name": "Colorado",
+    "middle_class_income": [61934, 185822],
+    "cost_of_living_index": 102.7,
+    "state_tax_brackets": [
+      {"rate": 0.044, "min_income": 0}
+    ]
+  },
+  "NJ": {
+    "name": "New Jersey",
+    "middle_class_income": [64751, 194252],
+    "cost_of_living_index": 115.1,
+    "state_tax_brackets": [
+      {"rate": 0.014, "min_income": 0},
+      {"rate": 0.0175, "min_income": 20000},
+      {"rate": 0.035, "min_income": 35000},
+      {"rate": 0.05525, "min_income": 40000},
+      {"rate": 0.0637, "min_income": 75000},
+      {"rate": 0.0897, "min_income": 500000},
+      {"rate": 0.1075, "min_income": 1000000}
+    ]
+  },
+  "PA": {
+    "name": "Pennsylvania",
+    "middle_class_income": [49211, 147648],
+    "cost_of_living_index": 97.2,
+    "state_tax_brackets": [
+      {"rate": 0.0307, "min_income": 0}
+    ]
+  }
+}

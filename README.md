@@ -5,6 +5,7 @@ A financial transaction analysis system that generates synthetic banking data, s
 ## What It Does
 
 - Generates 12 months of realistic financial transactions for multiple users (income, recurring bills, groceries, shopping, etc.)
+- Adjusts all figures based on state-specific tax brackets, cost of living, and middle class income ranges (10 states supported)
 - Loads data into a normalized database (7 tables, 3NF with foreign keys)
 - Runs 10 analytical SQL queries covering budget variance, cash flow, anomaly detection, and more
 - Produces automated plain-English insights per user
@@ -17,7 +18,8 @@ A financial transaction analysis system that generates synthetic banking data, s
 personal-finance-analytics/
 ├── main.py                    # Pipeline entry point
 ├── config/
-│   └── categories.json        # Spending/income category definitions
+│   ├── categories.json        # Spending/income category definitions
+│   └── states.json            # State tax brackets and cost of living data
 ├── sql/
 │   ├── schema.sql             # Database schema (7 tables)
 │   ├── analytical_queries.sql # 10 analytical queries
@@ -68,9 +70,30 @@ python main.py
 ### Options
 
 ```
+--state CODE    State code for tax rates and cost of living (default: CA)
 --user-id ID    Run analytics for a specific user (default: all)
 --months N      Months of data to generate (default: 12)
 --skip-viz      Skip chart generation
+```
+
+### Supported States
+
+| Code | State | Code | State |
+|------|-------|------|-------|
+| CA | California | MA | Massachusetts |
+| CO | Colorado | NJ | New Jersey |
+| FL | Florida | NY | New York |
+| IL | Illinois | PA | Pennsylvania |
+| TX | Texas | WA | Washington |
+
+Each state has its own tax brackets, middle class income range, and cost-of-living adjustment. To add a new state, add an entry to `config/states.json` with the state's tax brackets, middle class income range, and cost of living index.
+
+```bash
+# Run for Texas
+python main.py --state TX
+
+# Run for New York with 6 months of data
+python main.py --state NY --months 6
 ```
 
 ### Output
