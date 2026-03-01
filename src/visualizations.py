@@ -205,10 +205,11 @@ def plot_top_merchants(conn, user_id, output_path):
 
 def generate_all_charts(conn, user_id, output_path):
     """Generate all visualization charts for a user."""
-    os.makedirs(output_path, exist_ok=True)
-    plot_spending_trends(conn, user_id, output_path)
-    plot_budget_variance(conn, user_id, output_path)
-    plot_category_breakdown(conn, user_id, output_path)
-    plot_income_vs_expenses(conn, user_id, output_path)
-    plot_savings_rate_trend(conn, user_id, output_path)
-    plot_top_merchants(conn, user_id, output_path)
+    charts_dir = os.path.join(output_path, "charts")
+    os.makedirs(charts_dir, exist_ok=True)
+    plot_spending_trends(conn, user_id, charts_dir)
+    plot_budget_variance(conn, user_id, charts_dir)
+    plot_category_breakdown(conn, user_id, charts_dir)
+    plot_income_vs_expenses(conn, user_id, charts_dir)
+    plot_savings_rate_trend(conn, user_id, charts_dir)
+    plot_top_merchants(conn, user_id, charts_dir)

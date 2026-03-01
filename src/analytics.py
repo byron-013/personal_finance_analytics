@@ -33,10 +33,11 @@ def print_and_save_table(df, title, user_dir=None):
     _console.print(table)
 
     # Save CSV
-    out_dir = user_dir if user_dir else REPORTS_BASE
-    os.makedirs(out_dir, exist_ok=True)
+    base = user_dir if user_dir else REPORTS_BASE
+    csv_dir = os.path.join(base, "csv")
+    os.makedirs(csv_dir, exist_ok=True)
     filename = title.replace(" ", "_") + ".csv"
-    df.to_csv(os.path.join(out_dir, filename), index=False)
+    df.to_csv(os.path.join(csv_dir, filename), index=False)
 
 
 def get_spending_trends(conn, user_id, months=12):
@@ -307,26 +308,27 @@ def generate_insights(conn, user_id):
 
 def export_report_data(conn, user_id, output_path):
     """Export key metrics to CSVs for use in Excel or other BI tools."""
-    os.makedirs(output_path, exist_ok=True)
+    csv_dir = os.path.join(output_path, "csv")
+    os.makedirs(csv_dir, exist_ok=True)
 
     # Monthly summary
     monthly = pd.read_sql_query(
         "SELECT * FROM monthly_summary WHERE user_id = ?", conn, params=[user_id]
     )
-    monthly.to_csv(os.path.join(output_path, "monthly_summary.csv"), index=False)
+    monthly.to_csv(os.path.join(csv_dir, "monthly_summary.csv"), index=False)
 
     # Category breakdown
     category = pd.read_sql_query("SELECT * FROM category_summary", conn)
-    category.to_csv(os.path.join(output_path, "category_summary.csv"), index=False)
+    category.to_csv(os.path.join(csv_dir, "category_summary.csv"), index=False)
 
     # Budget performance
     budget = pd.read_sql_query(
         "SELECT * FROM budget_performance WHERE user_id = ?", conn, params=[user_id]
     )
-    budget.to_csv(os.path.join(output_path, "budget_performance.csv"), index=False)
+    budget.to_csv(os.path.join(csv_dir, "budget_performance.csv"), index=False)
 
     # Spending trends
     trends = get_spending_trends(conn, user_id)
-    trends.to_csv(os.path.join(output_path, "spending_trends.csv"), index=False)
+    trends.to_csv(os.path.join(csv_dir, "spending_trends.csv"), index=False)
 
-    print(f"  Exported 4 report files to {output_path}")
+    print(f"  Exported 4 report files to {csv_dir}")

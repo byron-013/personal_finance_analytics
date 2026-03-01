@@ -1,79 +1,91 @@
-# Personal Finance Analytics
+# Personal Finance Analytics — Extended Branch
 
 A financial transaction analysis system that generates synthetic banking data, stores it in a normalized SQLite database, and runs analytical queries to surface spending patterns, budget performance, and cash flow projections.
 
-## What It Does
+This branch (`more_accurate_income_ranges_middle_class`) adds **middle class tier refinement**, **rich terminal tables**, and an **interactive Streamlit dashboard**.
 
-- Generates 12 months of realistic financial transactions for multiple users (income, recurring bills, groceries, shopping, etc.)
-- Adjusts all figures based on state-specific tax brackets, cost of living, and middle class income ranges (10 states supported)
-- Loads data into a normalized database (7 tables, 3NF with foreign keys)
-- Runs 10 analytical SQL queries covering budget variance, cash flow, anomaly detection, and more
-- Produces automated plain-English insights per user
-- Outputs charts (spending trends, budget vs actual, category breakdowns, savings rate)
-- Exports report CSVs for further analysis
+## What's New in This Branch
 
-## Project Structure
+### Middle Class Tier Toggle
+Narrow the income range to a specific sub-tier of the middle class instead of using the full range:
+- **lower-middle** — bottom third of the state's middle class range
+- **solidly-middle** — middle third
+- **upper-middle** — top third
 
-```
-personal-finance-analytics/
-├── main.py                    # Pipeline entry point
-├── config/
-│   ├── categories.json        # Spending/income category definitions
-│   └── states.json            # State tax brackets and cost of living data
-├── sql/
-│   ├── schema.sql             # Database schema (7 tables)
-│   ├── analytical_queries.sql # 10 analytical queries
-│   └── views.sql              # 5 reusable views
-├── src/
-│   ├── data_generator.py      # Synthetic data generation
-│   ├── database_manager.py    # DB init, loading, validation
-│   ├── analytics.py           # Trend analysis, forecasting, insights
-│   └── visualizations.py      # Chart generation
-├── data/synthetic/            # Generated CSVs and .db (gitignored)
-└── reports/analysis_output/   # Charts and exported reports (gitignored)
+Use via CLI flag or interactive prompt:
+```bash
+# CLI flag
+python main.py --state CA --middle-class-tier low
+
+# Interactive — program will ask after state selection
+python main.py --state CA
 ```
 
-## Database Schema
+### Rich Terminal Tables
+Key analytics results are printed as formatted tables in the terminal (using the `rich` library) and saved as CSVs. Tables are displayed for:
+- Budget vs Actual
+- Top 15 Merchants by Spend
+- Category % of Total Spending
+- Monthly Savings Rate
+- 30/60/90 Day Balance Projection
+- Income Summary per User (gross and estimated net)
 
-| Table | Description |
-|-------|-------------|
-| `users` | User profiles with income |
-| `accounts` | Bank accounts (checking, savings, credit card) |
-| `categories` | Spending/income categories with parent-child hierarchy |
-| `merchants` | Merchants linked to categories |
-| `transactions` | Financial transactions with amounts, dates, recurring flags |
-| `budgets` | Monthly budget targets per category |
-| `financial_goals` | Savings, debt payoff, and investment goals |
+### Streamlit Dashboard
+An interactive browser-based dashboard for exploring the data visually.
 
-## Analytical Queries
+```bash
+# First generate the data
+python main.py --state CA
 
-The `sql/analytical_queries.sql` file contains 10 queries:
+# Then launch the dashboard
+streamlit run dashboard.py
+```
 
-1. Monthly spending by category
-2. Budget vs actual variance with status flags
-3. Top 10 merchants by total spend
-4. Recurring transaction identification
-5. Month-over-month spending growth (window functions)
-6. Cash flow analysis with cumulative savings
-7. Category spending distribution (% of total)
-8. Year-over-year quarterly comparison
-9. Account balance projection (30/60/90 days)
-10. Anomaly detection (transactions > 2 standard deviations)
+The dashboard includes:
+- **KPI cards** — monthly income, expenses, net savings, savings rate (with deltas)
+- **Monthly Overview** — bar charts and detail table for income vs expenses
+- **Budget vs Actual** — month selector with color-coded status (over budget / at risk / on track)
+- **Top Merchants** — sortable table and bar chart of top 20 merchants
+- **Category Breakdown** — spending distribution with percentages
+- **Cash Flow Forecast** — 30/60/90 day balance projection with line chart
+- **User selector** in sidebar to switch between users
+
+### Organized Output
+Reports are now organized by file type under each user's folder:
+```
+reports/analysis_output/
+├── Patricia_Miller/
+│   ├── csv/           # All CSV reports
+│   └── charts/        # All PNG chart images
+├── William_Johnson/
+│   ├── csv/
+│   └── charts/
+└── Danielle_Johnson/
+    ├── csv/
+    └── charts/
+```
 
 ## Setup & Usage
 
 ```bash
+# Install dependencies (use a virtual environment)
 pip install -r requirements.txt
-python main.py
+
+# Run the full pipeline
+python main.py --state CA
+
+# Launch the interactive dashboard
+streamlit run dashboard.py
 ```
 
-### Options
+### CLI Options
 
 ```
---state CODE    State code for tax rates and cost of living (default: CA)
---user-id ID    Run analytics for a specific user (default: all)
---months N      Months of data to generate (default: 12)
---skip-viz      Skip chart generation
+--state CODE              State code for tax/COL (default: CA)
+--middle-class-tier TIER  Narrow income range: low, mid, or high
+--user-id ID              Run analytics for a specific user (default: all)
+--months N                Months of data to generate (default: 12)
+--skip-viz                Skip PNG chart generation
 ```
 
 ### Supported States
@@ -86,25 +98,33 @@ python main.py
 | IL | Illinois | PA | Pennsylvania |
 | TX | Texas | WA | Washington |
 
-Each state has its own tax brackets, middle class income range, and cost-of-living adjustment. To add a new state, add an entry to `config/states.json` with the state's tax brackets, middle class income range, and cost of living index.
+## Project Structure
 
-```bash
-# Run for Texas
-python main.py --state TX
-
-# Run for New York with 6 months of data
-python main.py --state NY --months 6
 ```
-
-### Output
-
-- **Database:** `data/synthetic/finance.db`
-- **Charts:** `reports/analysis_output/*.png`
-- **Reports:** `reports/analysis_output/*.csv`
+personal-finance-analytics/
+├── main.py                    # Pipeline entry point
+├── dashboard.py               # Streamlit interactive dashboard
+├── config/
+│   ├── categories.json        # Spending/income category definitions
+│   └── states.json            # State tax brackets and cost of living data
+├── sql/
+│   ├── schema.sql             # Database schema (7 tables)
+│   ├── analytical_queries.sql # 10 analytical queries
+│   └── views.sql              # 5 reusable views
+├── src/
+│   ├── data_generator.py      # Synthetic data generation
+│   ├── database_manager.py    # DB init, loading, validation
+│   ├── analytics.py           # Trend analysis, forecasting, insights, rich tables
+│   └── visualizations.py      # Chart generation (PNG)
+├── data/synthetic/            # Generated CSVs and .db (gitignored)
+└── reports/analysis_output/   # Charts and exported reports (gitignored)
+```
 
 ## Tech Stack
 
 - Python, Pandas, NumPy
 - SQLite (normalized schema with indexes and views)
-- Matplotlib, Seaborn
+- Matplotlib, Seaborn (static charts)
+- Rich (terminal table formatting)
+- Streamlit (interactive dashboard)
 - Faker (synthetic data)

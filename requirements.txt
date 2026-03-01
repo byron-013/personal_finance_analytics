@@ -4,3 +4,4 @@ faker>=19.3.1
 matplotlib>=3.7.2
 seaborn>=0.12.2
 rich>=13.0.0
+streamlit>=1.30.0
