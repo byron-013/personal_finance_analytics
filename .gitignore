@@ -16,3 +16,6 @@ reports/analysis_output/*
 # Environment
 .env
 venv/
+
+# Claude Code
+.claude/

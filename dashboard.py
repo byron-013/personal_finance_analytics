@@ -1,5 +1,6 @@
 """Streamlit dashboard for Personal Finance Analytics."""
 
+import json
 import os
 import sqlite3
 
@@ -8,6 +9,7 @@ import streamlit as st
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "data", "synthetic", "finance.db")
+PROFILE_PATH = os.path.join(BASE_DIR, "data", "synthetic", "profile.json")
 
 
 @st.cache_resource
@@ -226,6 +228,60 @@ def main():
                 hide_index=True,
             )
             st.line_chart(forecast.set_index("month")["projected_balance"])
+
+    # ── Demographic Profile (Pro Mode) ──
+    if os.path.exists(PROFILE_PATH):
+        with open(PROFILE_PATH, "r") as pf:
+            profile = json.load(pf)
+
+        st.markdown("---")
+        st.subheader("Demographic Profile (Pro Mode)")
+
+        col_left, col_right = st.columns(2)
+
+        with col_left:
+            st.markdown("**Personal**")
+            age_val = profile.get("age")
+            married_val = profile.get("is_married")
+            dual_val = profile.get("dual_income")
+
+            rows = []
+            rows.append(("Age", str(age_val) if age_val is not None else "Not set"))
+            rows.append(("Married", "Yes" if married_val is True else ("No" if married_val is False else "Not set")))
+            rows.append(("Dual Income", "Yes" if dual_val is True else ("No" if dual_val is False else "N/A")))
+
+            num_kids = profile.get("num_children")
+            child_ages = profile.get("child_ages")
+            rows.append(("Children", str(num_kids) if num_kids is not None else "Not set"))
+            if child_ages:
+                rows.append(("Child Ages", ", ".join(str(a) for a in child_ages)))
+
+            personal_df = pd.DataFrame(rows, columns=["Attribute", "Value"])
+            st.dataframe(personal_df, use_container_width=True, hide_index=True)
+
+        with col_right:
+            st.markdown("**Social & Financial**")
+            race_val = profile.get("race")
+            eth_val = profile.get("ethnicity")
+            gender_val = profile.get("gender")
+            weight_val = profile.get("income_weight", 1.0)
+
+            rows2 = []
+            rows2.append(("Race", race_val.title() if race_val else "Not set"))
+            rows2.append(("Ethnicity", eth_val.title() if eth_val else "Not set"))
+            rows2.append(("Gender", gender_val.title() if gender_val else "Not set"))
+            rows2.append(("Income Weight", f"{weight_val:.2f}x"))
+
+            adj = profile.get("expense_adjustments", {})
+            if adj.get("childcare"):
+                rows2.append(("Childcare Cost", f"${adj['childcare']:,}/mo"))
+            if adj.get("education"):
+                rows2.append(("Education Cost", f"${adj['education']:,}/mo"))
+            if adj.get("transportation_multiplier"):
+                rows2.append(("Transport Multiplier", f"{adj['transportation_multiplier']:.2f}x"))
+
+            social_df = pd.DataFrame(rows2, columns=["Attribute", "Value"])
+            st.dataframe(social_df, use_container_width=True, hide_index=True)
 
     # ── Sidebar: Income Summary ──
     st.sidebar.markdown("---")

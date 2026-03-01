@@ -1,6 +1,7 @@
 """Main orchestration pipeline for Personal Finance Analytics."""
 
 import argparse
+import json
 import os
 import sys
 
@@ -170,6 +171,17 @@ def main():
         for k, v in profile.items():
             print(f"    {k}: {v}")
         print()
+
+        # Save profile to JSON so the dashboard can display it
+        profile_path = os.path.join(SYNTHETIC_DATA_DIR, "profile.json")
+        os.makedirs(SYNTHETIC_DATA_DIR, exist_ok=True)
+        with open(profile_path, "w") as pf:
+            json.dump(profile, pf, indent=2)
+    else:
+        # Remove stale profile if running in standard mode
+        profile_path = os.path.join(SYNTHETIC_DATA_DIR, "profile.json")
+        if os.path.exists(profile_path):
+            os.remove(profile_path)
 
     print(f"=== Personal Finance Analytics Pipeline ({state_name}) ===\n")
 
