@@ -50,10 +50,12 @@ def plot_spending_trends(conn, user_id, output_path):
 
 def plot_budget_variance(conn, user_id, output_path):
     """Horizontal bar chart comparing actual spending to budget."""
+    # Use the most recent month where actual spending is meaningful
     df = pd.read_sql_query("""
         SELECT * FROM budget_performance
         WHERE user_id = ? AND month_year = (
-            SELECT MAX(month_year) FROM budget_performance WHERE user_id = ?
+            SELECT MAX(bp.month_year) FROM budget_performance bp
+            WHERE bp.user_id = ? AND bp.actual_spent > 0
         )
     """, conn, params=[user_id, user_id])
 

@@ -144,15 +144,26 @@ def main():
     # Step 9: Generate visualizations
     if not args.skip_viz:
         print("\n\nStep 9: Generating visualizations...")
-        viz_user = args.user_id if args.user_id else 1
-        generate_all_charts(conn, viz_user, REPORTS_DIR)
+        for user_id in user_ids:
+            user_name = conn.execute(
+                "SELECT first_name || ' ' || last_name FROM users WHERE user_id = ?",
+                (user_id,)
+            ).fetchone()[0]
+            user_dir = os.path.join(REPORTS_DIR, user_name.replace(" ", "_"))
+            print(f"\n  Charts for {user_name}:")
+            generate_all_charts(conn, user_id, user_dir)
     else:
         print("\n\nStep 9: Skipping visualizations (--skip-viz)")
 
     # Step 10: Export reports
     print("\nStep 10: Exporting reports...")
-    export_user = args.user_id if args.user_id else 1
-    export_report_data(conn, export_user, REPORTS_DIR)
+    for user_id in user_ids:
+        user_name = conn.execute(
+            "SELECT first_name || ' ' || last_name FROM users WHERE user_id = ?",
+            (user_id,)
+        ).fetchone()[0]
+        user_dir = os.path.join(REPORTS_DIR, user_name.replace(" ", "_"))
+        export_report_data(conn, user_id, user_dir)
 
     conn.close()
 
