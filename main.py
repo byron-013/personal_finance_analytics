@@ -1,5 +1,6 @@
 """Main orchestration pipeline for Personal Finance Analytics."""
 
+import argparse
 import os
 import sys
 
@@ -28,6 +29,7 @@ from src.analytics import (
     generate_insights,
     export_report_data,
 )
+from src.visualizations import generate_all_charts
 
 # Paths
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -40,6 +42,15 @@ REPORTS_DIR = os.path.join(BASE_DIR, "reports", "analysis_output")
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Personal Finance Analytics Pipeline")
+    parser.add_argument("--user-id", type=int, default=None,
+                        help="Run analytics for a specific user ID (default: all users)")
+    parser.add_argument("--months", type=int, default=12,
+                        help="Number of months of data to generate (default: 12)")
+    parser.add_argument("--skip-viz", action="store_true",
+                        help="Skip chart generation")
+    args = parser.parse_args()
+
     print("=== Personal Finance Analytics Pipeline ===\n")
 
     # Step 1: Generate synthetic data
@@ -48,7 +59,8 @@ def main():
     categories_df = generate_categories(CATEGORIES_CONFIG)
     merchants_df = generate_merchants(categories_df)
     accounts_df = generate_accounts(users_df)
-    transactions_df = generate_transactions(accounts_df, merchants_df, categories_df, months=12)
+    transactions_df = generate_transactions(accounts_df, merchants_df, categories_df,
+                                            months=args.months)
     budgets_df = generate_budgets(users_df, categories_df, months=6)
     goals_df = generate_financial_goals(users_df)
 
@@ -72,7 +84,7 @@ def main():
 
     # Step 4: Load data
     print("\nStep 4: Loading data into database...")
-    row_counts = load_data_to_db(conn, data_dict)
+    load_data_to_db(conn, data_dict)
 
     # Step 5: Create indexes
     print("\nStep 5: Creating indexes...")
@@ -89,56 +101,64 @@ def main():
     print("\nStep 7: Validating data integrity...")
     validate_data_integrity(conn)
 
-    # Step 8: Run analytics for each user
+    # Determine which users to analyze
+    if args.user_id:
+        user_ids = [args.user_id]
+    else:
+        user_ids = [row[0] for row in conn.execute("SELECT user_id FROM users").fetchall()]
+
+    # Step 8: Run analytics
     print("\nStep 8: Running analytics...")
-    for user_id in range(1, 4):
+    for user_id in user_ids:
         user_name = conn.execute(
             "SELECT first_name || ' ' || last_name FROM users WHERE user_id = ?",
             (user_id,)
         ).fetchone()[0]
         print(f"\n  --- User: {user_name} (ID: {user_id}) ---")
 
-        # Spending trends
         trends = get_spending_trends(conn, user_id)
         print(f"  Spending trends: {len(trends)} category-month records")
 
-        # Budget variance
         budget_var = analyze_budget_variance(conn, user_id)
         if not budget_var.empty:
             over = len(budget_var[budget_var["status"] == "OVER BUDGET"])
             print(f"  Budget variance: {len(budget_var)} categories, {over} over budget")
 
-        # Savings rate
         savings = calculate_savings_rate(conn, user_id)
         if not savings.empty:
             avg_rate = savings["savings_rate_pct"].mean()
             print(f"  Average savings rate: {avg_rate:.1f}%")
 
-        # Anomalies
         anomalies = identify_spending_anomalies(conn, user_id)
         print(f"  Anomalies detected: {len(anomalies)}")
 
-        # Cash flow forecast
         forecast = forecast_cash_flow(conn, user_id)
         if not forecast.empty:
             print(f"  90-day projected balance: ${forecast.iloc[-1]['projected_balance']:,.2f}")
 
-        # Insights
         insights = generate_insights(conn, user_id)
         print(f"\n  Insights:")
         for insight in insights:
             print(f"    - {insight}")
 
-    # Step 9: Export reports
-    print("\n\nStep 9: Exporting reports...")
-    export_report_data(conn, 1, REPORTS_DIR)
+    # Step 9: Generate visualizations
+    if not args.skip_viz:
+        print("\n\nStep 9: Generating visualizations...")
+        viz_user = args.user_id if args.user_id else 1
+        generate_all_charts(conn, viz_user, REPORTS_DIR)
+    else:
+        print("\n\nStep 9: Skipping visualizations (--skip-viz)")
+
+    # Step 10: Export reports
+    print("\nStep 10: Exporting reports...")
+    export_user = args.user_id if args.user_id else 1
+    export_report_data(conn, export_user, REPORTS_DIR)
 
     conn.close()
 
     print("\n=== Pipeline Complete ===")
     print(f"Database: {DB_PATH}")
     print(f"Reports: {REPORTS_DIR}")
-    print("Check data/synthetic/ for CSV files")
 
 
 if __name__ == "__main__":
