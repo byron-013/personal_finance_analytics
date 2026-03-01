@@ -81,14 +81,18 @@ JOIN users u ON b.user_id = u.user_id
 JOIN categories c ON b.category_id = c.category_id
 LEFT JOIN (
     SELECT
+        a.user_id,
         t.category_id,
         strftime('%Y-%m', t.transaction_date) AS month,
         SUM(ABS(t.amount)) AS total_spent
     FROM transactions t
+    JOIN accounts a ON t.account_id = a.account_id
     JOIN categories c ON t.category_id = c.category_id
     WHERE c.category_type = 'expense'
-    GROUP BY t.category_id, month
-) actual ON actual.category_id = b.category_id AND actual.month = b.month_year;
+    GROUP BY a.user_id, t.category_id, month
+) actual ON actual.category_id = b.category_id
+    AND actual.month = b.month_year
+    AND actual.user_id = b.user_id;
 
 
 -- ============================================================================
